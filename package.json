@@ -1,0 +1,17 @@
+{
+  "name": "finder-nfe",
+  "version": "1.0.0",
+  "description": "Finder - Sistema de Busca, Manifestação e Download de NF-e por CNPJ sem certificado digital",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["nfe", "cnpj", "manifestacao", "danfe", "receita-federal"],
+  "author": "Finder Enterprise",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}

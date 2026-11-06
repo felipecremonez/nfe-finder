@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finder | Busca e Manifestação de NF-e por CNPJ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        darkbg: {
+                            800: '#0f172a',
+                            900: '#0b0f19',
+                            950: '#05070f'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+        }
+    </style>
+</head>
+<body class="bg-darkbg-950 text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="no-print border-b border-slate-800/80 bg-darkbg-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                    <i class="ph-bold ph-receipt text-2xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-black tracking-wider bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">FINDER</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 ml-1.5 uppercase tracking-widest">NF-e Cloud</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Modo Sem Certificado Digital</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Search Bar Hero -->
+        <section class="max-w-3xl mx-auto text-center space-y-6">
+            <div class="space-y-2">
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                    Busca e Manifestação de NF-e Destinadas
+                </h1>
+                <p class="text-slate-400 text-sm sm:text-base">
+                    Consulte Notas Fiscais Eletrônicas emitidas contra seu CNPJ diretamente da SEFAZ, faça confirmação, rejeição e download de XML/DANFE.
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form id="searchForm" class="relative">
+                <div class="flex items-center bg-darkbg-900 border border-slate-800 rounded-2xl p-2 shadow-2xl focus-within:ring-2 focus-within:ring-emerald-500 transition">
+                    <div class="pl-4 text-slate-500">
+                        <i class="ph-bold ph-buildings text-xl"></i>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="cnpjInput" 
+                        placeholder="Digite o CNPJ da Empresa (ex: 00.000.000/0001-91)" 
+                        maxlength="18"
+                        class="w-full pl-3 pr-4 py-3.5 bg-transparent text-white font-medium placeholder-slate-500 focus:outline-none"
+                    />
+                    <button 
+                        type="submit" 
+                        id="btnSearch"
+                        class="px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 flex items-center space-x-2 transition active:scale-95"
+                    >
+                        <span>Buscar NF-e</span>
+                        <i class="ph-bold ph-magnifying-glass"></i>
+                    </button>
+                </div>
+                <p id="errorMessage" class="hidden text-rose-400 text-sm font-medium text-left mt-2 pl-4 flex items-center space-x-1">
+                    <i class="ph-bold ph-warning-circle"></i>
+                    <span id="errorText">CNPJ inválido. Digite os 14 números corretamente.</span>
+                </p>
+            </form>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loader" class="hidden max-w-4xl mx-auto py-12 text-center space-y-4">
+            <div class="inline-block animate-spin text-emerald-400 text-4xl">
+                <i class="ph-bold ph-spinner-gap"></i>
+            </div>
+            <p class="text-slate-400 font-medium text-sm">Consultando WebService SEFAZ MDE para o CNPJ informado...</p>
+        </div>
+
+        <!-- Notes Listing Container -->
+        <section id="resultsContainer" class="hidden space-y-6">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                        <span>Notas Fiscais Localizadas</span>
+                        <span id="badgeTotal" class="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-950 text-emerald-400 border border-emerald-800">0</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">CNPJ Consultado: <strong id="lblCnpj" class="text-slate-200">---</strong></p>
+                </div>
+            </div>
+
+            <!-- Notes Grid -->
+            <div id="notesGrid" class="grid grid-cols-1 gap-4">
+                <!-- Cards Injected via JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Manifestation Modal -->
+    <div id="manifestModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-darkbg-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-6 relative">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i class="ph-bold ph-stamp text-emerald-400 text-xl"></i>
+                    <span>Manifestar Nota Fiscal</span>
+                </h3>
+                <button id="closeModal" class="text-slate-400 hover:text-white transition">
+                    <i class="ph-bold ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">Chave de Acesso</label>
+                    <p id="modalChave" class="text-xs font-mono bg-darkbg-950 p-2.5 rounded-lg border border-slate-800 text-emerald-400 break-all">---</p>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Selecione o Tipo de Manifestação</label>
+                    <select id="selectManifestType" class="w-full bg-darkbg-950 border border-slate-800 text-white rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="Confirmação da Operação">✅ Confirmação da Operação (Aceitar Nota)</option>
+                        <option value="Desconhecimento da Operação">🛑 Desconhecimento da Operação (Rejeitar Nota)</option>
+                        <option value="Operação não Realizada">❌ Operação não Realizada (Não Entregue)</option>
+                        <option value="Ciência da Emissão">👁️ Ciência da Emissão (Tomar Conhecimento)</option>
+                    </select>
+                </div>
+
+                <div id="boxJustificativa" class="hidden space-y-1">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Justificativa da Rejeição / Não Realização</label>
+                    <textarea id="txtJustificativa" rows="3" placeholder="Motivo da manifestação (mínimo 15 caracteres)..." class="w-full bg-darkbg-950 border border-slate-800 text-white rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 border-t border-slate-800 pt-4">
+                <button id="btnCancelManifest" class="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white transition">Cancelar</button>
+                <button id="btnSubmitManifest" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center space-x-1.5">
+                    <span>Enviar Manifestação</span>
+                    <i class="ph-bold ph-paper-plane-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        // State
+        let currentCnpj = '';
+        let currentNotes = [];
+        let selectedChave = null;
+
+        // DOM
+        const cnpjInput = document.getElementById('cnpjInput');
+        const searchForm = document.getElementById('searchForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const loader = document.getElementById('loader');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const notesGrid = document.getElementById('notesGrid');
+        const badgeTotal = document.getElementById('badgeTotal');
+        const lblCnpj = document.getElementById('lblCnpj');
+
+        // Modal DOM
+        const manifestModal = document.getElementById('manifestModal');
+        const closeModal = document.getElementById('closeModal');
+        const btnCancelManifest = document.getElementById('btnCancelManifest');
+        const modalChave = document.getElementById('modalChave');
+        const selectManifestType = document.getElementById('selectManifestType');
+        const boxJustificativa = document.getElementById('boxJustificativa');
+        const txtJustificativa = document.getElementById('txtJustificativa');
+        const btnSubmitManifest = document.getElementById('btnSubmitManifest');
+
+        // CNPJ Masking
+        cnpjInput.addEventListener('input', (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 14) v = v.slice(0, 14);
+            v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+            v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+            v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+            v = v.replace(/(\d{4})(\d)/, '$1-$2');
+            e.target.value = v;
+            errorMessage.classList.add('hidden');
+        });
+
+        // Form Submit
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const cleanCnpj = cnpjInput.value.replace(/\D/g, '');
+
+            if (cleanCnpj.length !== 14) {
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = 'CNPJ inválido. Forneça os 14 números do cadastro.';
+                return;
+            }
+
+            currentCnpj = cleanCnpj;
+            errorMessage.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`/api/nfe/consulta/${cleanCnpj}`);
+                const data = await res.json();
+                
+                loader.classList.add('hidden');
+                if (data.sucesso) {
+                    currentNotes = data.notas;
+                    renderNotes(data.notas);
+                } else {
+                    errorMessage.classList.remove('hidden');
+                    errorText.textContent = data.error || 'Erro ao realizar a busca de notas.';
+                }
+            } catch (err) {
+                loader.classList.add('hidden');
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = 'Falha de conexão com o servidor Finder.';
+            }
+        });
+
+        // Render Cards
+        function renderNotes(notes) {
+            lblCnpj.textContent = cnpjInput.value;
+            badgeTotal.textContent = notes.length;
+            notesGrid.innerHTML = '';
+
+            notes.forEach(note => {
+                const card = document.createElement('div');
+                card.className = "bg-darkbg-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 shadow-xl transition space-y-4";
+                
+                let manifestBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800">Sem Manifestação</span>`;
+                if (note.situacaoManifestacao.includes('Confirmação')) {
+                    manifestBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">✅ Confirmação Registrada</span>`;
+                } else if (note.situacaoManifestacao.includes('Desconhecimento') || note.situacaoManifestacao.includes('Não Realizada')) {
+                    manifestBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-950 text-rose-400 border border-rose-800">🛑 Rejeitada</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-3">
+                                <h3 class="text-lg font-bold text-white">${note.emitenteRazao}</h3>
+                                ${manifestBadge}
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">CNPJ Emitente: <strong class="text-slate-200">${note.emitenteCnpj}</strong></p>
+                        </div>
+                        <div class="text-left md:text-right">
+                            <span class="text-xs font-semibold text-slate-400 block">Valor Total</span>
+                            <span class="text-xl font-extrabold text-emerald-400">R$ ${note.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 py-2 text-xs">
+                        <div>
+                            <span class="text-slate-500 font-semibold uppercase block">Número / Série</span>
+                            <span class="text-slate-200 font-bold">${note.numero} - Série ${note.serie}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 font-semibold uppercase block">Data de Emissão</span>
+                            <span class="text-slate-200 font-bold">${new Date(note.dataEmissao).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 font-semibold uppercase block">Status SEFAZ</span>
+                            <span class="text-emerald-400 font-bold">${note.statusSefaz}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 font-semibold uppercase block">Chave de Acesso</span>
+                            <span class="text-slate-400 font-mono truncate block" title="${note.chave}">${note.chave.substring(0, 18)}...</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-800/80">
+                        <a href="/api/nfe/download/xml/${note.chave}" download class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center space-x-1.5 transition">
+                            <i class="ph-bold ph-download-simple"></i>
+                            <span>Download XML</span>
+                        </a>
+                        <button onclick="openManifestModal('${note.chave}')" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center space-x-1.5 transition">
+                            <i class="ph-bold ph-stamp"></i>
+                            <span>Manifestar Nota</span>
+                        </button>
+                    </div>
+                `;
+                notesGrid.appendChild(card);
+            });
+
+            resultsContainer.classList.remove('hidden');
+        }
+
+        // Modal Controls
+        function openManifestModal(chave) {
+            selectedChave = chave;
+            modalChave.textContent = chave;
+            manifestModal.classList.remove('hidden');
+        }
+
+        selectManifestType.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val.includes('Desconhecimento') || val.includes('Não Realizada')) {
+                boxJustificativa.classList.remove('hidden');
+            } else {
+                boxJustificativa.classList.add('hidden');
+            }
+        });
+
+        [closeModal, btnCancelManifest].forEach(btn => {
+            btn.addEventListener('click', () => manifestModal.classList.add('hidden'));
+        });
+
+        btnSubmitManifest.addEventListener('click', async () => {
+            const tipo = selectManifestType.value;
+            const justificativa = txtJustificativa.value;
+
+            if ((tipo.includes('Desconhecimento') || tipo.includes('Não Realizada')) && justificativa.length < 15) {
+                alert('A justificativa de rejeição deve ter no mínimo 15 caracteres.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/nfe/manifestar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cnpj: currentCnpj,
+                        chave: selectedChave,
+                        tipoManifestacao: tipo,
+                        justificativa: justificativa
+                    })
+                });
+
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert(`Manifestação efetuada com sucesso!
+Protocolo SEFAZ: ${data.protocolo}`);
+                    manifestModal.classList.add('hidden');
+                    // Refresh current notes list
+                    const note = currentNotes.find(n => n.chave === selectedChave);
+                    if (note) note.situacaoManifestacao = tipo;
+                    renderNotes(currentNotes);
+                } else {
+                    alert(`Erro: ${data.error}`);
+                }
+            } catch (err) {
+                alert('Erro de comunicação ao enviar manifestação.');
+            }
+        });
+    </script>
+</body>
+</html>
